@@ -1,9 +1,34 @@
 // 存储默认配置
 chrome.runtime.onInstalled.addListener(function() {
-  chrome.storage.local.set({
-    fileTxtContent: '',
-    subscriptionUrl: ''
+  chrome.storage.local.get(['fileTxtContent', 'subscriptionUrl'], function(items) {
+    if (items.fileTxtContent === undefined) {
+      chrome.storage.local.set({ fileTxtContent: '' });
+    }
+    if (items.subscriptionUrl === undefined) {
+      chrome.storage.local.set({ subscriptionUrl: '' });
+    }
   });
+
+  chrome.contextMenus.create({
+    id: "block-current-site",
+    title: "把当前网页加入黑名单",
+    contexts: ["all"]
+  }, () => {
+    if (chrome.runtime.lastError) {
+      // 忽略重复创建的错误
+      console.log("Context menu create error:", chrome.runtime.lastError.message);
+    }
+  });
+});
+
+// 处理右键菜单点击
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+  if (info.menuItemId === "block-current-site") {
+    if (tab && tab.url) {
+      await addLocalBlockedUrl(tab.url);
+      chrome.tabs.reload(tab.id);
+    }
+  }
 });
 
 // 缓存机制
